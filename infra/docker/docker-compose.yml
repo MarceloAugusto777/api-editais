@@ -1,0 +1,114 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: govpoint-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: govpoint-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ../../services/api-gateway
+      dockerfile: Dockerfile
+    container_name: govpoint-api-gateway
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      AUTH_SERVICE_URL: http://auth-service:8081
+      ATTENDANCE_SERVICE_URL: http://attendance-service:8001
+      FACE_SERVICE_URL: http://face-service:8002
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - attendance-service
+      - face-service
+
+  auth-service:
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+    container_name: govpoint-auth
+    environment:
+      NODE_ENV: development
+      PORT: 8081
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  attendance-service:
+    build:
+      context: ../../services/attendance-service
+      dockerfile: Dockerfile
+    container_name: govpoint-attendance
+    environment:
+      PORT: 8001
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  face-service:
+    build:
+      context: ../../services/face-service
+      dockerfile: Dockerfile
+    container_name: govpoint-face
+    environment:
+      PORT: 8002
+      REDIS_URL: redis://redis:6379
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      FACE_MODEL_PATH: /models
+    ports:
+      - "8002:8002"
+    volumes:
+      - face_models:/models
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  face_models:
+
