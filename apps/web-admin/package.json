@@ -14,10 +14,10 @@
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
-    "vite": "^5.3.4",
     "@types/react": "^18.2.79",
-    "@types/react-dom": "^18.2.25"
+    "@types/react-dom": "^18.2.25",
+    "@vitejs/plugin-react": "^5.0.2",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.4"
   }
 }
-
