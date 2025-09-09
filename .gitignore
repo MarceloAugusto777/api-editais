@@ -1,1 +1,38 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+package-lock.json
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Env & secrets
+.env
+.env.*
+infra/docker/.env
+
+# Editors & OS
+.DS_Store
+.idea/
+.vscode/
+
+# Coverage & reports
+coverage/
+.coverage
+coverage.xml
+
+# Containers
+*.tgz
+*.tar
+
 node_modules
